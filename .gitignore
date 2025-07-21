@@ -1,0 +1,17 @@
+# Ignore all .pyc files
+*.pyc
+
+# Ignore the __pycache__ folder
+__pycache__/
+
+# Ignore a specific folder
+data/
+docs/
+demo/
+vendor/
+
+# Ignore a specific file
+
+
+# Ignore everything in a folder
+output/
