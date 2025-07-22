@@ -9,7 +9,7 @@ import torch.nn as nn
 import torch.optim as optim
 
 # Import from refactored modules
-from dataset.siamesepair import create_dataloaders
+from dataset.siamesepair import create_siamese_dataloaders
 from model.siamesenetwork import create_siamese_model
 from model.metrics import accuracy, precision, recall, f1_score
 
@@ -116,11 +116,11 @@ if __name__ == "__main__":
         torch.cuda.manual_seed_all(seed)
     
     # Set data path
-    data_path = 'data/socofing'
+    dataset = 'LIVDET'  # Change to 'SOKOTO' if needed
     
     # Create data loaders - all dataset handling now happens in the siamesepair module
-    train_loader, val_loader, test_loader = create_dataloaders(
-        data_path, 
+    train_loader, val_loader, test_loader = create_siamese_dataloaders(
+        dataset,
         batch_size=BATCH_SIZE,
         num_workers=4
     )

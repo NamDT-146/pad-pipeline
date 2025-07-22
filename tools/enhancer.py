@@ -43,8 +43,8 @@ except ImportError:
 
 # Import fingerprint processing functions from dataset module
 try:
-    from dataset.enhancing import create_fingerprint_enhancement
-    from dataset.preprocessing import create_fingerprint_transforms
+    from dataset.preprocess.enhancing import create_fingerprint_enhancement
+    from dataset.preprocess.preprocessing import create_fingerprint_transforms
 except ImportError as e:
     print(f"Error importing dataset modules: {e}")
     print("Make sure the dataset module is in your Python path")

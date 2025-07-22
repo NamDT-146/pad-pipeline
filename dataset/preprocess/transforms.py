@@ -448,6 +448,17 @@ class FingerprintElasticTransform:
     def __repr__(self):
         return self.__class__.__name__ + f'(alpha={self.alpha}, sigma={self.sigma}, p={self.p})'
 
+class ReshapeForEnhancer:
+    """Ensures numpy array has the correct shape for the enhancer."""
+    def __call__(self, img):
+        if isinstance(img, np.ndarray):
+            # If shape is [1, H, W] (channel first), convert to [H, W]
+            if img.ndim == 3 and img.shape[0] == 1:
+                return np.squeeze(img, axis=0)
+            # If shape is [H, W, 1] (channel last), convert to [H, W]
+            elif img.ndim == 3 and img.shape[2] == 1:
+                return np.squeeze(img, axis=2)
+        return img
 
 class FingerprintPreprocessingPipeline:
     """
@@ -543,12 +554,13 @@ class FingerprintPreprocessingPipeline:
             # Validation/test: just resize
             transform_list.append(lambda x: x.resize((self.img_size, self.img_size), Image.BILINEAR))
         
-        # Convert to tensor
-        transform_list.append(ToTensor())
+        # Convert to numpy
+        transform_list.append(ToNumpy())
+
+        transform_list.append(ReshapeForEnhancer())
         
         # Normalize to [0, 1] range
-        transform_list.append(lambda x: x.float() / 255.0)
-        
+        # transform_list.append(lambda x: x.astype(np.float32) / 255.0)        
         return Compose(transform_list)
     
     def __call__(self, pil_img):

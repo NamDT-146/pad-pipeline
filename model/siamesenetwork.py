@@ -7,7 +7,7 @@ class SiameseNetwork(nn.Module):
     Siamese network for fingerprint verification.
     Uses a shared CNN for feature extraction and a similarity network for matching.
     """
-    def __init__(self, input_channels=1, base_filters=32, embedding_size=128):
+    def __init__(self, input_channels=1, base_filters=32, embedding_size=512):
         super(SiameseNetwork, self).__init__()
         
         # Feature extraction network
@@ -27,26 +27,26 @@ class SiameseNetwork(nn.Module):
             nn.MaxPool2d(2),
             
             # Block 3
-            nn.Conv2d(base_filters*2, embedding_size, kernel_size=3, padding=1),
+            nn.Conv2d(base_filters*2, base_filters * 4, kernel_size=3, padding=1),
+            nn.BatchNorm2d(base_filters*4),
+            nn.LeakyReLU(0.15),
+            nn.Dropout(0.4),
+            nn.MaxPool2d(2),
+
+            
+            # Block 4
+            nn.Conv2d(base_filters*4, base_filters* 8, kernel_size=3, padding=1),
+            nn.BatchNorm2d(base_filters*8),
+            nn.LeakyReLU(0.15),
+            nn.Dropout(0.4),
+            nn.MaxPool2d(2),
+
+            # Block 5
+            nn.Conv2d(base_filters * 8, embedding_size, kernel_size=3, padding=1),
             nn.BatchNorm2d(embedding_size),
             nn.LeakyReLU(0.15),
             nn.Dropout(0.4),
             nn.AdaptiveAvgPool2d((1, 1)),  # Add this instead
-            
-            # # Block 4
-            # nn.Conv2d(base_filters*4, embedding_size, kernel_size=3, padding=1),
-            # nn.BatchNorm2d(embedding_size),
-            # nn.LeakyReLU(0.15),
-            # nn.Dropout(0.4),
-            # nn.AdaptiveAvgPool2d((1, 1)),  # Add this instead
-            
-            # # Block 5
-            # nn.Conv2d(embedding_size, embedding_size, kernel_size=3, padding=1),
-            # nn.BatchNorm2d(embedding_size),
-            # nn.LeakyReLU(0.15),
-            # nn.Dropout(0.4),
-            # nn.AdaptiveAvgPool2d((1, 1)),  # Add this instead
-            # nn.MaxPool2d(2),
 
             # # Block 6
             # nn.Conv2d(embedding_size, embedding_size, kernel_size=3, padding=1),

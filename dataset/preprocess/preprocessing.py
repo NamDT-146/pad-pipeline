@@ -39,11 +39,11 @@ def get_default_args(mode='train'):
     class Args:
         def __init__(self):
             # Common parameters
-            self.img_size = 224  # Standard image size for training
+            self.img_size = 1000  # Standard image size for training
             
             # Preprocessing parameters
             self.fingerprint_normalization = True
-            self.histogram_equalization = False
+            self.histogram_equalization = True
             
             # Augmentation parameters (only applied in training mode)
             self.rotation_degrees = 30 if mode == 'train' else 0
@@ -55,8 +55,8 @@ def get_default_args(mode='train'):
             self.crop_ratio = (0.9, 1.1) if mode == 'train' else (1.0, 1.0)
             
             # Enhancement parameters (from test_enhancement.py)
-            self.apply_orientation = False
-            self.apply_ogorman = False
+            self.apply_orientation = True
+            self.apply_ogorman = True
             self.apply_binarization = True
             self.apply_thinning = True  # Thinning might remove too much information for verification
             self.orientation_block_size = 16

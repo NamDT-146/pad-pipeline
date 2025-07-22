@@ -6,6 +6,7 @@ from PIL import Image
 from typing import Tuple, Optional, Dict, Any
 from torch.utils.data import Dataset
 import torch
+from torchvision.transforms import functional as F
 
 
 from dataset.preprocess.preprocessing import create_fingerprint_transforms, get_default_args
@@ -43,7 +44,7 @@ class SubjectsFingerprint:
     
     def __str__(self):
         """String representation of the object."""
-        return f"ObjectsFingerprint(id={self.object_identity}, images={len(self.filepaths)})"
+        return f"ObjectsFingerprint(id={self.subject_identity}, images={len(self.filepaths)})"
 
 
 class BaseDataset(Dataset):
@@ -59,24 +60,29 @@ class BaseDataset(Dataset):
         return len(self.subjects)
     
     def __getitem__(self, img_path):
-        # img_path = self.subjects[idx].get_filepath()
         img = Image.open(img_path).convert('L')  # Convert to grayscale
-        
         preprocessed = self.preprocessor(img)
-        
-
         if isinstance(preprocessed, Image.Image) or isinstance(preprocessed, np.ndarray):
-            # Get enhanced image (extract only the enhanced result, not all stages)
             enhanced_results = self.enhancer(preprocessed)
-            final_img = enhanced_results['thinned']  # Use the original enhanced image
+            final_img = enhanced_results['binary']  # Use the thinned enhanced image
         else:
-            # If already a tensor, use as is
             final_img = preprocessed
         
-        # Ensure correct shape: [1, H, W] for a single-channel image
         if isinstance(final_img, torch.Tensor) and final_img.dim() == 2:
             final_img = final_img.unsqueeze(0)
         elif isinstance(final_img, np.ndarray) and final_img.ndim == 2:
             final_img = torch.from_numpy(final_img).unsqueeze(0).float()
         
+        # target_size = (224, 224)  # Adjust this to your needed size
+        # if final_img.shape[-2:] != target_size:
+        #     final_img = F.resize(final_img, target_size)
+
         return final_img
+    
+def get_image_files(directory):
+    """Get all image files with supported extensions from a directory."""
+    extensions = {'.bmp', '.jpg', '.jpeg', '.png', '.tif', '.tiff'}  # Use set for faster lookups
+    
+    for file_path in directory.iterdir():
+        if file_path.is_file() and file_path.suffix.lower() in extensions:
+            yield file_path

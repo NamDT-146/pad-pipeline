@@ -86,125 +86,243 @@ class EnhancedGradientOrientationEstimation:
         return f'{self.__class__.__name__}(block_size={self.block_size}, smooth_sigma={self.smooth_sigma})'
 
 
+# class EnhancedOGormanFilter:
+#     """
+#     Enhanced O'Gorman filter for fingerprint image enhancement with linear interpolation
+#     to solve the rotation coordinate problem mentioned in the paper.
+    
+#     Uses anisotropic smoothening kernel oriented parallel to ridges.
+#     """
+    
+#     def __init__(self, filter_size=7, sigma_u=2.0, sigma_v=0.5):
+#         self.filter_size = filter_size
+#         self.sigma_u = sigma_u  # Along ridge direction
+#         self.sigma_v = sigma_v  # Perpendicular to ridge direction
+        
+#         # Create base 0° direction filter (7x7 matrix)
+#         self.base_filter = self._create_base_filter()
+    
+#     def _create_base_filter(self):
+#         """Create the base 7x7 O'Gorman filter for 0° direction."""
+#         size = self.filter_size
+#         center = size // 2
+#         filter_kernel = np.zeros((size, size))
+        
+#         for i in range(size):
+#             for j in range(size):
+#                 u = i - center
+#                 v = j - center
+                
+#                 # O'Gorman filter formula
+#                 filter_kernel[i, j] = np.exp(-(u**2 / (2 * self.sigma_u**2) + 
+#                                               v**2 / (2 * self.sigma_v**2)))
+        
+#         # Normalize filter
+#         filter_kernel = filter_kernel / np.sum(filter_kernel)
+#         return filter_kernel
+    
+#     def _rotate_filter(self, angle):
+#         """
+#         Rotate the base filter by given angle using linear interpolation
+#         to solve the coordinate problem mentioned in the paper.
+#         """
+#         size = self.filter_size
+#         center = size // 2
+#         rotated_filter = np.zeros((size, size))
+        
+#         cos_angle = np.cos(angle)
+#         sin_angle = np.sin(angle)
+        
+#         for i in range(size):
+#             for j in range(size):
+#                 # Original coordinates relative to center
+#                 x = i - center
+#                 y = j - center
+                
+#                 # Rotate coordinates
+#                 x_rot = x * cos_angle - y * sin_angle + center
+#                 y_rot = x * sin_angle + y * cos_angle + center
+                
+#                 # Linear interpolation to solve non-integer coordinate problem
+#                 if 0 <= x_rot < size - 1 and 0 <= y_rot < size - 1:
+#                     x1, y1 = int(x_rot), int(y_rot)
+#                     x2, y2 = x1 + 1, y1 + 1
+                    
+#                     # Bilinear interpolation weights
+#                     wx = x_rot - x1
+#                     wy = y_rot - y1
+                    
+#                     # Interpolate using the base filter
+#                     value = (1 - wx) * (1 - wy) * self.base_filter[x1, y1] + \
+#                             wx * (1 - wy) * self.base_filter[x2, y1] + \
+#                             (1 - wx) * wy * self.base_filter[x1, y2] + \
+#                             wx * wy * self.base_filter[x2, y2]
+                    
+#                     rotated_filter[i, j] = value
+        
+#         return rotated_filter
+    
+#     def __call__(self, image: np.ndarray, orientation_field: np.ndarray) -> np.ndarray:
+#         """
+#         Apply enhanced O'Gorman filter to fingerprint image.
+        
+#         Args:
+#             image: Input fingerprint image
+#             orientation_field: Orientation field from gradient estimation
+            
+#         Returns:
+#             Enhanced fingerprint image
+#         """
+#         if len(image.shape) == 3:
+#             image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+        
+#         enhanced = np.zeros_like(image, dtype=np.float64)
+#         h, w = image.shape
+#         pad = self.filter_size // 2
+        
+#         # Pad image to handle borders
+#         padded_image = np.pad(image, pad, mode='reflect')
+        
+#         # Apply filter pixel by pixel with orientation-based rotation
+#         for i in range(h):
+#             for j in range(w):
+#                 # Get local orientation
+#                 theta = orientation_field[i, j]
+                
+#                 # Rotate filter according to local orientation
+#                 rotated_filter = self._rotate_filter(theta)
+                
+#                 # Extract local region
+#                 region = padded_image[i:i+self.filter_size, j:j+self.filter_size]
+                
+#                 # Apply rotated filter
+#                 enhanced[i, j] = np.sum(region * rotated_filter)
+        
+#         # Normalize to [0, 255] range
+#         enhanced = np.clip(enhanced, 0, 255).astype(np.uint8)
+#         return enhanced
+
+#     def __repr__(self):
+#         return f'{self.__class__.__name__}(filter_size={self.filter_size})'
+
 class EnhancedOGormanFilter:
     """
-    Enhanced O'Gorman filter for fingerprint image enhancement with linear interpolation
-    to solve the rotation coordinate problem mentioned in the paper.
-    
-    Uses anisotropic smoothening kernel oriented parallel to ridges.
+    Optimized version of the O'Gorman filter using pre-computed filters,
+    Numba acceleration, and vectorized operations.
     """
     
-    def __init__(self, filter_size=7, sigma_u=2.0, sigma_v=0.5):
+    def __init__(self, filter_size=7, sigma_u=2.0, sigma_v=0.5, angle_bins=36):
         self.filter_size = filter_size
         self.sigma_u = sigma_u  # Along ridge direction
         self.sigma_v = sigma_v  # Perpendicular to ridge direction
+        self.angle_bins = angle_bins
         
-        # Create base 0° direction filter (7x7 matrix)
-        self.base_filter = self._create_base_filter()
+        # Pre-compute rotated filters for quantized angles
+        self.angle_step = np.pi / angle_bins
+        self.filters = self._precompute_filters()
     
     def _create_base_filter(self):
-        """Create the base 7x7 O'Gorman filter for 0° direction."""
+        """Create the base O'Gorman filter for 0° direction."""
         size = self.filter_size
         center = size // 2
         filter_kernel = np.zeros((size, size))
         
-        for i in range(size):
-            for j in range(size):
-                u = i - center
-                v = j - center
-                
-                # O'Gorman filter formula
-                filter_kernel[i, j] = np.exp(-(u**2 / (2 * self.sigma_u**2) + 
-                                              v**2 / (2 * self.sigma_v**2)))
+        # Vectorized filter creation
+        y, x = np.mgrid[:size, :size]
+        u = x - center
+        v = y - center
+        
+        # O'Gorman filter formula
+        filter_kernel = np.exp(-(u**2 / (2 * self.sigma_u**2) + 
+                               v**2 / (2 * self.sigma_v**2)))
         
         # Normalize filter
-        filter_kernel = filter_kernel / np.sum(filter_kernel)
-        return filter_kernel
+        return filter_kernel / np.sum(filter_kernel)
     
-    def _rotate_filter(self, angle):
-        """
-        Rotate the base filter by given angle using linear interpolation
-        to solve the coordinate problem mentioned in the paper.
-        """
+    def _precompute_filters(self):
+        """Pre-compute rotated filters for all quantized angles."""
+        base_filter = self._create_base_filter()
+        filters = []
+        
+        for i in range(self.angle_bins):
+            angle = i * self.angle_step
+            rotated_filter = self._rotate_filter_fast(base_filter, angle)
+            filters.append(rotated_filter)
+            
+        return filters
+    
+    def _rotate_filter_fast(self, filter_kernel, angle):
+        """Fast filter rotation using OpenCV."""
+        # Get rotation matrix
         size = self.filter_size
-        center = size // 2
-        rotated_filter = np.zeros((size, size))
+        center = (size // 2, size // 2)
+        rotation_matrix = cv2.getRotationMatrix2D(center, angle * 180 / np.pi, 1.0)
         
-        cos_angle = np.cos(angle)
-        sin_angle = np.sin(angle)
+        # Apply rotation using OpenCV (much faster than manual interpolation)
+        rotated = cv2.warpAffine(filter_kernel, rotation_matrix, (size, size),
+                                 flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE)
         
-        for i in range(size):
-            for j in range(size):
-                # Original coordinates relative to center
-                x = i - center
-                y = j - center
+        # Normalize to maintain filter sum = 1
+        if np.sum(rotated) > 0:
+            rotated = rotated / np.sum(rotated)
+            
+        return rotated
+    
+    @numba.jit(nopython=True, parallel=True)
+    def _apply_filters_numba(self, padded_image, orientation_field, h, w, filters, angle_step, filter_size):
+        """Numba-accelerated filter application."""
+        enhanced = np.zeros((h, w), dtype=np.float64)
+        pad = filter_size // 2
+        
+        # Parallel processing of rows
+        for i in numba.prange(h):
+            for j in range(w):
+                # Quantize orientation to nearest pre-computed filter
+                theta = orientation_field[i, j]
+                bin_idx = int(round(theta / angle_step)) % len(filters)
                 
-                # Rotate coordinates
-                x_rot = x * cos_angle - y * sin_angle + center
-                y_rot = x * sin_angle + y * cos_angle + center
+                # Extract region and apply filter
+                region = padded_image[i:i+filter_size, j:j+filter_size]
+                enhanced[i, j] = np.sum(region * filters[bin_idx])
                 
-                # Linear interpolation to solve non-integer coordinate problem
-                if 0 <= x_rot < size - 1 and 0 <= y_rot < size - 1:
-                    x1, y1 = int(x_rot), int(y_rot)
-                    x2, y2 = x1 + 1, y1 + 1
-                    
-                    # Bilinear interpolation weights
-                    wx = x_rot - x1
-                    wy = y_rot - y1
-                    
-                    # Interpolate using the base filter
-                    value = (1 - wx) * (1 - wy) * self.base_filter[x1, y1] + \
-                            wx * (1 - wy) * self.base_filter[x2, y1] + \
-                            (1 - wx) * wy * self.base_filter[x1, y2] + \
-                            wx * wy * self.base_filter[x2, y2]
-                    
-                    rotated_filter[i, j] = value
-        
-        return rotated_filter
+        return enhanced
     
     def __call__(self, image: np.ndarray, orientation_field: np.ndarray) -> np.ndarray:
-        """
-        Apply enhanced O'Gorman filter to fingerprint image.
-        
-        Args:
-            image: Input fingerprint image
-            orientation_field: Orientation field from gradient estimation
-            
-        Returns:
-            Enhanced fingerprint image
-        """
+        """Apply enhanced O'Gorman filter to fingerprint image."""
         if len(image.shape) == 3:
             image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
         
-        enhanced = np.zeros_like(image, dtype=np.float64)
+        # Ensure image is uint8 for OpenCV operations
+        image = image.astype(np.uint8)
+        
         h, w = image.shape
         pad = self.filter_size // 2
         
         # Pad image to handle borders
         padded_image = np.pad(image, pad, mode='reflect')
         
-        # Apply filter pixel by pixel with orientation-based rotation
-        for i in range(h):
-            for j in range(w):
-                # Get local orientation
-                theta = orientation_field[i, j]
+        # Method 1: Block processing with OpenCV (fastest for larger images)
+        enhanced = np.zeros_like(image, dtype=np.float64)
+        
+        # Quantize orientation field to filter bins
+        quantized_field = np.round(orientation_field / self.angle_step).astype(np.int32) % self.angle_bins
+        
+        # For each orientation bin, apply the corresponding filter to all matching pixels
+        for bin_idx in range(self.angle_bins):
+            # Create mask of pixels with this orientation
+            mask = (quantized_field == bin_idx)
+            if not np.any(mask):
+                continue
                 
-                # Rotate filter according to local orientation
-                rotated_filter = self._rotate_filter(theta)
-                
-                # Extract local region
-                region = padded_image[i:i+self.filter_size, j:j+self.filter_size]
-                
-                # Apply rotated filter
-                enhanced[i, j] = np.sum(region * rotated_filter)
+            # Apply filter using fast convolution
+            filtered = cv2.filter2D(image, -1, self.filters[bin_idx])
+            
+            # Copy results to enhanced image where mask is True
+            enhanced[mask] = filtered[mask]
         
         # Normalize to [0, 255] range
         enhanced = np.clip(enhanced, 0, 255).astype(np.uint8)
         return enhanced
-
-    def __repr__(self):
-        return f'{self.__class__.__name__}(filter_size={self.filter_size})'
-
 
 # class AdaptiveBinarization:
 #     """
@@ -395,17 +513,7 @@ class FingerprintEnhancementPipeline:
         Returns:
             Dictionary containing results from each enhancement step
         """
-        # Convert PIL to numpy if needed
-        if isinstance(image, Image.Image):
-            image = np.array(image)
-        
-        # Ensure grayscale
-        if len(image.shape) == 3:
-            image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-        
         results = {'original': image.copy()}
-
-        print("starting orientation estimation...")
         
         # Step 1: Enhanced gradient-based orientation estimation
         if self.apply_orientation:
@@ -414,8 +522,6 @@ class FingerprintEnhancementPipeline:
         else:
             orientation_field = None
 
-        print("starting O'Gorman filter...")
-        
         # Step 2: Enhanced O'Gorman filter for image enhancement
         if self.apply_ogorman and orientation_field is not None:
             enhanced_image = self.ogorman_filter(image, orientation_field)
@@ -423,8 +529,6 @@ class FingerprintEnhancementPipeline:
             current_image = enhanced_image
         else:
             current_image = image
-
-        print("starting adaptive binarization...")
         
         # Step 3: Adaptive binarization using 9x9 matrix
         if self.apply_binarization:
@@ -432,14 +536,11 @@ class FingerprintEnhancementPipeline:
             results['binary'] = binary_image
             current_image = binary_image
         
-        print("starting enhanced Zhang-Suen thinning...")
         # Step 4: Enhanced Zhang-Suen thinning with fix ridge algorithm
         if self.apply_thinning and self.apply_binarization:
             thinned_image = self.thinner(current_image)
             results['thinned'] = thinned_image
 
-        print("enhancement pipeline completed!")
-        
         return results
 
     def __repr__(self):

@@ -8,9 +8,20 @@ from sklearn.model_selection import train_test_split
 from torch.utils.data import Dataset, DataLoader
 import torch
 
-
 from .preprocess import create_fingerprint_transforms, get_default_args, create_fingerprint_enhancement
-from .dataset_define import SOKOTODataset, SubjectsFingerprint, get_SOKOTO_fingerprint_datasets
+from .dataset_define import SubjectsFingerprint, get_SOKOTO_fingerprint_datasets, get_LivDet_fingerprint_datasets
+
+DATASET = {
+    'SOKOTO': {
+        'get_datasets_func': get_SOKOTO_fingerprint_datasets,
+        'altered_levels': ['Easy', 'Medium', 'Hard'],
+        'data_path': 'data/socofing',
+        },
+    'LIVDET': {
+        'get_datasets_func': get_LivDet_fingerprint_datasets,
+        'data_path': 'data/livedet/Live',
+    }
+}
 
 class SiamesePairDataset(Dataset):
     """
@@ -43,7 +54,7 @@ class SiamesePairDataset(Dataset):
 
         return self.dataset[img_path_1], self.dataset[img_path_2], torch.tensor([label], dtype=torch.float32)
 
-def get_siamese_datasets(data_path: str, args=None):
+def get_siamese_datasets(dataset: str, genuine_rate=0.5, args=None):
     """
     Creates Siamese pair datasets for training, validation and testing.
     
@@ -54,16 +65,18 @@ def get_siamese_datasets(data_path: str, args=None):
     Returns:
         Tuple of (train_pair_dataset, val_pair_dataset, test_pair_dataset)
     """
-    train_dataset, val_dataset, test_dataset = get_SOKOTO_fingerprint_datasets(data_path)
-    
-    train_pair_dataset = SiamesePairDataset(train_dataset)
+    get_dataset_func = DATASET[dataset]['get_datasets_func']
+    data_path = DATASET[dataset]['data_path']
+    train_dataset, val_dataset, test_dataset = get_dataset_func(data_path, args=args)
+
+    train_pair_dataset = SiamesePairDataset(train_dataset, genuine_rate=genuine_rate)
     val_pair_dataset = SiamesePairDataset(val_dataset)
     test_pair_dataset = SiamesePairDataset(test_dataset)
     
     return train_pair_dataset, val_pair_dataset, test_pair_dataset
 
 
-def create_dataloaders(data_path: str, batch_size=32, num_workers=4, args=None):
+def create_siamese_dataloaders(dataset: str, batch_size=32, num_workers=4, args=None):
     """
     Creates DataLoaders for training, validation and testing.
     
@@ -76,7 +89,7 @@ def create_dataloaders(data_path: str, batch_size=32, num_workers=4, args=None):
     Returns:
         Tuple of (train_loader, val_loader, test_loader)
     """
-    train_pair_dataset, val_pair_dataset, test_pair_dataset = get_siamese_datasets(data_path)
+    train_pair_dataset, val_pair_dataset, test_pair_dataset = get_siamese_datasets(dataset=dataset)
     
     train_loader = DataLoader(
         train_pair_dataset, 

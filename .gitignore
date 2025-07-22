@@ -11,10 +11,12 @@ data/
 docs/
 demo/
 vendor/
+tools/
 
 # Ignore a specific file
 log.txt
-test.py
+main.py
+best_model.pth
 
 # Ignore everything in a folder
 output/

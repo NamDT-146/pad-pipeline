@@ -1,1 +1,1 @@
-from .siamesepair import get_siamese_datasets, create_dataloaders
+from .siamesepair import get_siamese_datasets, create_siamese_dataloaders
