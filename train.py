@@ -16,7 +16,7 @@ from model.metrics import accuracy, precision, recall, f1_score
 # Constants
 BATCH_SIZE = 16
 EPOCHS = 150
-OUTPUT_DIR = 'output'  # Define output directory
+OUTPUT_DIR = 'output/training0723'  # Define output directory
 
 # Set device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

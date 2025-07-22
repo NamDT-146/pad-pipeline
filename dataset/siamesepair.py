@@ -55,16 +55,7 @@ class SiamesePairDataset(Dataset):
         return self.dataset[img_path_1], self.dataset[img_path_2], torch.tensor([label], dtype=torch.float32)
 
 def get_siamese_datasets(dataset: str, genuine_rate=0.5, args=None):
-    """
-    Creates Siamese pair datasets for training, validation and testing.
-    
-    Args:
-        data_path: Path to SOKOTO dataset
-        args: Arguments object for preprocessing and enhancement
-    
-    Returns:
-        Tuple of (train_pair_dataset, val_pair_dataset, test_pair_dataset)
-    """
+
     get_dataset_func = DATASET[dataset]['get_datasets_func']
     data_path = DATASET[dataset]['data_path']
     train_dataset, val_dataset, test_dataset = get_dataset_func(data_path, args=args)
@@ -77,18 +68,7 @@ def get_siamese_datasets(dataset: str, genuine_rate=0.5, args=None):
 
 
 def create_siamese_dataloaders(dataset: str, batch_size=32, num_workers=4, args=None):
-    """
-    Creates DataLoaders for training, validation and testing.
-    
-    Args:
-        data_path: Path to SOKOTO dataset
-        batch_size: Batch size for DataLoaders
-        num_workers: Number of workers for DataLoaders
-        args: Arguments object for preprocessing and enhancement
-    
-    Returns:
-        Tuple of (train_loader, val_loader, test_loader)
-    """
+
     train_pair_dataset, val_pair_dataset, test_pair_dataset = get_siamese_datasets(dataset=dataset)
     
     train_loader = DataLoader(
@@ -132,9 +112,6 @@ if __name__ == "__main__":
         x1, x2, labels = batch
         print(f"Batch size: {x1.size(0)}, Image shape: {x1.shape}, Labels shape: {labels.shape}")
         break
-    # This will print the first batch of the training loader
-    # and its shapes for verification
-    # You can further test the dataset and dataloader functionality here
     for batch in val_loader:
         x1, x2, labels = batch
         print(f"Validation Batch size: {x1.size(0)}, Image shape: {x1.shape}, Labels shape: {labels.shape}")
@@ -143,8 +120,3 @@ if __name__ == "__main__":
         x1, x2, labels = batch
         print(f"Test Batch size: {x1.size(0)}, Image shape: {x1.shape}, Labels shape: {labels.shape}")
         break
-    # This will print the first batch of the validation and test loaders
-    # and their shapes for verification
-    # You can further test the dataset and dataloader functionality here
-    # This is useful to ensure the dataset and dataloader are working as expected
-    # and that the images are being loaded and preprocessed correctly.  
