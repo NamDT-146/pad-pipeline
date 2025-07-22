@@ -27,18 +27,18 @@ class SiameseNetwork(nn.Module):
             nn.MaxPool2d(2),
             
             # Block 3
-            nn.Conv2d(base_filters*2, base_filters*4, kernel_size=3, padding=1),
-            nn.BatchNorm2d(base_filters*4),
-            nn.LeakyReLU(0.15),
-            nn.Dropout(0.4),
-            nn.MaxPool2d(2),
-            
-            # Block 4
-            nn.Conv2d(base_filters*4, embedding_size, kernel_size=3, padding=1),
+            nn.Conv2d(base_filters*2, embedding_size, kernel_size=3, padding=1),
             nn.BatchNorm2d(embedding_size),
             nn.LeakyReLU(0.15),
             nn.Dropout(0.4),
             nn.AdaptiveAvgPool2d((1, 1)),  # Add this instead
+            
+            # # Block 4
+            # nn.Conv2d(base_filters*4, embedding_size, kernel_size=3, padding=1),
+            # nn.BatchNorm2d(embedding_size),
+            # nn.LeakyReLU(0.15),
+            # nn.Dropout(0.4),
+            # nn.AdaptiveAvgPool2d((1, 1)),  # Add this instead
             
             # # Block 5
             # nn.Conv2d(embedding_size, embedding_size, kernel_size=3, padding=1),

@@ -3,6 +3,8 @@
 
 # Ignore the __pycache__ folder
 __pycache__/
+**/__pycache__/
+
 
 # Ignore a specific folder
 data/
