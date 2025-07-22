@@ -13,16 +13,21 @@ from dataset.siamesepair import create_siamese_dataloaders
 from model.siamesenetwork import create_siamese_model
 from model.metrics import accuracy, precision, recall, f1_score
 
+# Constants
+BATCH_SIZE = 16
+EPOCHS = 150
+OUTPUT_DIR = 'output'  # Define output directory
+
 # Set device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Using device: {device}")
 
-# Constants
-BATCH_SIZE = 4
-EPOCHS = 150
+# Create output directory if it doesn't exist
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+print(f"Saving outputs to: {OUTPUT_DIR}/")
 
 # Training function
-def train_model(model, train_loader, val_loader, criterion, optimizer, num_epochs=150):
+def train_model(model, train_loader, val_loader, criterion, optimizer, num_epochs=150, output_dir='output'):
     best_val_loss = float('inf')
     history = {
         'train_loss': [], 'train_acc': [], 'train_f1': [],
@@ -35,7 +40,6 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, num_epoch
         train_loss, train_acc, train_f1 = 0.0, 0.0, 0.0
         
         for img1, img2, labels in train_loader:
-            # print(img1.shape, img2.shape, labels.shape)  # Debugging shapes
             img1, img2, labels = img1.to(device), img2.to(device), labels.to(device)
             
             # Zero gradients
@@ -81,13 +85,15 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, num_epoch
         # Save best model
         if val_loss < best_val_loss:
             best_val_loss = val_loss
+            model_path = os.path.join(output_dir, 'best_model.pth')
             torch.save({
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'loss': best_val_loss,
-            }, 'best_model.pth')
+            }, model_path)
             print(f"Saved new best model with validation loss: {best_val_loss:.4f}")
+            print(f"Model saved to: {model_path}")
         
         # Update history
         history['train_loss'].append(train_loss)
@@ -133,7 +139,8 @@ if __name__ == "__main__":
     optimizer = optim.Adam(model.parameters(), lr=0.001)
     
     # Train the model
-    history = train_model(model, train_loader, val_loader, criterion, optimizer, num_epochs=EPOCHS)
+    history = train_model(model, train_loader, val_loader, criterion, optimizer, 
+                          num_epochs=EPOCHS, output_dir=OUTPUT_DIR)
     
     # Plot training history
     plt.figure(figsize=(12, 4))
@@ -153,15 +160,23 @@ if __name__ == "__main__":
     plt.legend()
     plt.title('Accuracy')
     plt.tight_layout()
-    plt.savefig('training_history.png')
+    
+    # Save plot to output directory
+    plot_path = os.path.join(OUTPUT_DIR, 'training_history.png')
+    plt.savefig(plot_path)
+    print(f"Training history plot saved to: {plot_path}")
     plt.show()
     
     # Save the feature extraction model separately
     feature_model = model.get_feature_extractor()
-    torch.save(feature_model.state_dict(), 'feature_model.pth')
+    feature_model_path = os.path.join(OUTPUT_DIR, 'feature_model.pth')
+    torch.save(feature_model.state_dict(), feature_model_path)
+    print(f"Feature extraction model saved to: {feature_model_path}")
     
     # Save the full model
-    torch.save(model.state_dict(), 'full_model.pth')
+    full_model_path = os.path.join(OUTPUT_DIR, 'full_model.pth')
+    torch.save(model.state_dict(), full_model_path)
+    print(f"Full model saved to: {full_model_path}")
     
     # Evaluate on test set
     model.eval()
@@ -184,3 +199,12 @@ if __name__ == "__main__":
     
     print(f"Test results:")
     print(f"Loss: {test_loss:.4f}, Accuracy: {test_acc:.4f}, F1 Score: {test_f1:.4f}")
+    
+    # Save test results to file
+    test_results_path = os.path.join(OUTPUT_DIR, 'test_results.txt')
+    with open(test_results_path, 'w') as f:
+        f.write(f"Test Loss: {test_loss:.4f}\n")
+        f.write(f"Test Accuracy: {test_acc:.4f}\n")
+        f.write(f"Test F1 Score: {test_f1:.4f}\n")
+    print(f"Test results saved to: {test_results_path}")
+

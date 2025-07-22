@@ -122,7 +122,7 @@ if __name__ == "__main__":
     data_path = '../data/socofing'  # Adjust to your dataset path
     args = get_default_args(mode='train')
     
-    train_loader, val_loader, test_loader = create_dataloaders(
+    train_loader, val_loader, test_loader = create_siamese_dataloaders(
         data_path, batch_size=1, num_workers=4, args=args)
     
     print(f"Train loader: {len(train_loader)} batches")

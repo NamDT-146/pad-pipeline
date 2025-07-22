@@ -64,7 +64,7 @@ class BaseDataset(Dataset):
         preprocessed = self.preprocessor(img)
         if isinstance(preprocessed, Image.Image) or isinstance(preprocessed, np.ndarray):
             enhanced_results = self.enhancer(preprocessed)
-            final_img = enhanced_results['binary']  # Use the thinned enhanced image
+            final_img = enhanced_results['enhanced']  # Use the enhanced image
         else:
             final_img = preprocessed
         

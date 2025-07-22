@@ -26,7 +26,7 @@ __all__ = [
     'FingerprintRandomCrop'
 ]
 
-def get_default_args(mode='train'):
+def get_default_args(img_size=224, mode='train'):
     """
     Create arguments object with default parameters, matching test_enhancement.py.
     
@@ -39,8 +39,8 @@ def get_default_args(mode='train'):
     class Args:
         def __init__(self):
             # Common parameters
-            self.img_size = 1000  # Standard image size for training
-            
+            self.img_size = img_size  # Standard image size for training
+
             # Preprocessing parameters
             self.fingerprint_normalization = True
             self.histogram_equalization = True
@@ -57,8 +57,8 @@ def get_default_args(mode='train'):
             # Enhancement parameters (from test_enhancement.py)
             self.apply_orientation = True
             self.apply_ogorman = True
-            self.apply_binarization = True
-            self.apply_thinning = True  # Thinning might remove too much information for verification
+            self.apply_binarization = False
+            self.apply_thinning = False  # Thinning might remove too much information for verification
             self.orientation_block_size = 16
             self.orientation_smooth_sigma = 1.0
             self.ogorman_filter_size = 7

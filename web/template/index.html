@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Fingerprint Demo</title>
+  <link rel="stylesheet" href="#">
+</head>
+<body>
+  <h1>Fingerprint Registration & Validation</h1>
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      <ul class="flashes">
+        {% for msg in messages %}
+          <li>{{ msg }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endwith %}
+
+  <form action="#" method="post" enctype="multipart/form-data">
+    <input type="file" name="fingerprint" accept=".bmp" required><br><br>
+    <label>
+      <input type="radio" name="mode" value="register" checked> Register
+    </label>
+    <label>
+      <input type="radio" name="mode" value="validate"> Validate
+    </label><br><br>
+    <button type="submit">Submit</button>
+  </form>
+</body>
+</html>
