@@ -18,7 +18,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Using device: {device}")
 
 # Constants
-BATCH_SIZE = 16
+BATCH_SIZE = 4
 EPOCHS = 150
 
 # Training function
