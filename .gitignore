@@ -13,7 +13,8 @@ demo/
 vendor/
 
 # Ignore a specific file
-
+log.txt
+test.py
 
 # Ignore everything in a folder
 output/
