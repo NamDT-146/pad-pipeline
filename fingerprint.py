@@ -111,6 +111,39 @@ class FingerprintMatcher:
             print(f"Error verifying fingerprint: {e}")
             return "error", 0.0
     
+    # ===================== SIMPLE FINGERPRINT COMPARISON =====================
+    def compare_fingerprints(self, fingerprint_data1, fingerprint_data2, threshold=0.75):
+        """
+        Compare two fingerprint images and return (same_person: bool, score: float).
+        Returns True if the similarity score >= threshold, else False.
+        """
+        try:
+            # Convert to PIL Image if binary data
+            if isinstance(fingerprint_data1, bytes):
+                image1 = Image.open(BytesIO(fingerprint_data1)).convert('L')
+            else:
+                image1 = fingerprint_data1.convert('L')
+            if isinstance(fingerprint_data2, bytes):
+                image2 = Image.open(BytesIO(fingerprint_data2)).convert('L')
+            else:
+                image2 = fingerprint_data2.convert('L')
+            # Process images
+            pre1 = self._preprocess_image(image1)
+            enh1 = self._enhance_image(pre1)
+            feat1 = self._extract_features(enh1)
+            pre2 = self._preprocess_image(image2)
+            enh2 = self._enhance_image(pre2)
+            feat2 = self._extract_features(enh2)
+            # Compute similarity (same as in _match_features)
+            diff = feat1 - feat2
+            diff_squared = diff * diff
+            sim_score = 1.0 - torch.sqrt(torch.sum(diff_squared)).item() / 2.0
+            return sim_score >= threshold, sim_score
+        except Exception as e:
+            print(f"Error comparing fingerprints: {e}")
+            return False, 0.0
+    # ===================== END SIMPLE FINGERPRINT COMPARISON =====================
+    
     def _preprocess_image(self, image):
         preprocessor = create_fingerprint_transforms(self.args)
         return preprocessor(image)

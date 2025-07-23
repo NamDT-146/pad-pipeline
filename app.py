@@ -80,5 +80,28 @@ def remove_subject(subject_id):
     success, message = matcher.remove_subject(subject_id)
     return jsonify({"success": success, "message": message})
 
+# ===================== SIMPLE FINGERPRINT COMPARISON =====================
+@app.route('/compare', methods=['POST'])
+def compare_fingerprints():
+    """Simple endpoint to compare two fingerprint images and say if they are of the same person or not."""
+    file1 = request.files.get('fingerprint1')
+    file2 = request.files.get('fingerprint2')
+    if not file1 or not file2:
+        flash('Please upload both fingerprint images.')
+        return redirect(url_for('home'))
+    data1 = file1.read()
+    data2 = file2.read()
+    # Use the matcher to compare two fingerprints directly (implement this method if not present)
+    try:
+        same_person, score = matcher.compare_fingerprints(data1, data2)
+        if same_person:
+            flash(f"Result: Same person! (score: {score:.2f})")
+        else:
+            flash(f"Result: Different person. (score: {score:.2f})")
+    except Exception as e:
+        flash(f"Error comparing fingerprints: {str(e)}")
+    return redirect(url_for('home'))
+# ===================== END SIMPLE FINGERPRINT COMPARISON =====================
+
 if __name__ == '__main__':
     app.run(debug=True)

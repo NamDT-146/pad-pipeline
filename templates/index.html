@@ -6,6 +6,17 @@
 </head>
 <body>
     <h1>Welcome to the Fingerprint Matcher</h1>
+    <!-- Simple Fingerprint Comparison Form -->
+    <h2>Simple Fingerprint Comparison</h2>
+    <form action="/compare" method="post" enctype="multipart/form-data">
+        <label for="fingerprint1">Upload first fingerprint (.bmp):</label>
+        <input type="file" name="fingerprint1" id="fingerprint1" accept=".bmp" required><br><br>
+        <label for="fingerprint2">Upload second fingerprint (.bmp):</label>
+        <input type="file" name="fingerprint2" id="fingerprint2" accept=".bmp" required><br><br>
+        <button type="submit">Compare</button>
+    </form>
+    <hr>
+    <!-- Original Registration/Validation Form -->
     <form action="/process" method="post" enctype="multipart/form-data">
         <label for="fingerprint">Upload fingerprint (.bmp):</label>
         <input type="file" name="fingerprint" id="fingerprint" accept=".bmp" required><br><br>
