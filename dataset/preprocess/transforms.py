@@ -631,3 +631,4 @@ def create_fingerprint_transforms(args, mode='train'):
         training=training,
         augmentation_params=augmentation_params
     )
+
