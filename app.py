@@ -7,8 +7,8 @@ app = Flask(__name__)
 app.secret_key = 'demo_secret'  # for flash messages
 
 # Configuration
-MODEL_PATH = '#'  # Path to model weights
-DATABASE_PATH = '#'  # Path to fingerprint database
+MODEL_PATH = "weights/bad_model.pth"
+DATABASE_PATH = "database/fingerprint_database.pt"
 
 # Create required directories
 os.makedirs(os.path.dirname(DATABASE_PATH), exist_ok=True)
