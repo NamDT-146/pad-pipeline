@@ -5,6 +5,7 @@ import numpy as np
 from PIL import Image
 from pathlib import Path
 from io import BytesIO
+import warnings
 
 # Import the core functionality directly
 from model import get_architecture
@@ -25,12 +26,13 @@ class FingerprintMatcher:
         print(f"Loading model from {model_path}")
         self.model = get_architecture(model, device=device)
         checkpoint = torch.load(model_path, map_location=device)
-        
-        if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
-            self.model.load_state_dict(checkpoint['model_state_dict'])
-        else:
-            self.model.load_state_dict(checkpoint)
-        
+        try:
+            if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
+                self.model.load_state_dict(checkpoint['model_state_dict'])
+            else:
+                self.model.load_state_dict(checkpoint)
+        except RuntimeError as e:
+            warnings.warn(f"Could not load checkpoint for {model} architecture. Using default weights.\n{e}")
         self.model.eval()
         
         self.args = get_default_args(mode='test')

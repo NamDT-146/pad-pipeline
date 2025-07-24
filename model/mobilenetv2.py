@@ -7,7 +7,7 @@ class MobileNetV2Network(nn.Module):
     """
     Siamese-style network using MobileNetV2 as the feature extractor for fingerprint verification.
     """
-    def __init__(self, input_channels=1, embedding_size=512, pretrained=False):
+    def __init__(self, input_channels=1, embedding_size=512, pretrained=True):
         super(MobileNetV2Network, self).__init__()
         # Load MobileNetV2 backbone
         mobilenet = models.mobilenet_v2(pretrained=pretrained)
@@ -56,6 +56,6 @@ class MobileNetV2Network(nn.Module):
     def extract_features(self, x):
         return self.forward_one(x)
 
-def create_mobilenetv2_model(device, pretrained=False):
+def create_mobilenetv2_model(device, pretrained=True):
     model = MobileNetV2Network(pretrained=pretrained).to(device)
     return model
