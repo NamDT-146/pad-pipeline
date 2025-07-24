@@ -29,33 +29,35 @@ def process():
     mode = request.form.get('mode')             # "register" or "validate"
     file = request.files.get('fingerprint')     # .bmp file
     subject_id = request.form.get('subject_id', None)
+    architecture = request.form.get('architecture', 'siamese')
     
     if not file or mode not in ('register', 'validate'):
         flash('Please upload a .bmp and select an action.')
         return redirect(url_for('home'))
 
-    # Get file data directly from memory without saving
     fingerprint_data = file.read()
+
+    # Use selected architecture for this request
+    matcher = FingerprintMatcher(
+        database_path=DATABASE_PATH,
+        model_path=MODEL_PATH,
+        model=architecture,
+        device="cuda" if torch.cuda.is_available() else "cpu"
+    )
 
     if mode == 'register':
         if not subject_id:
             flash('Please provide a subject ID for registration.')
             return redirect(url_for('home'))
-            
-        # Register fingerprint directly from memory
         success, message = matcher.register_fingerprint(fingerprint_data, subject_id)
-        
         if success:
             flash(f"Fingerprint registered: {message}")
         else:
             flash(f"Registration failed: {message}")
-            
         return redirect(url_for('home'))
 
-    # Validation mode
     threshold = float(request.form.get('threshold', 0.75))
     identity, score = matcher.verify_fingerprint(fingerprint_data, threshold)
-    
     if identity not in ["unrecognized", "no_database", "error"]:
         flash(f"Matched: {identity} (confidence: {score:.2f})")
     else:
@@ -65,7 +67,6 @@ def process():
             flash(f"Error during verification. Score: {score:.2f}")
         else:
             flash(f"No match found. Best score: {score:.2f}")
-            
     return redirect(url_for('home'))
 
 @app.route('/subjects', methods=['GET'])
@@ -86,12 +87,18 @@ def compare_fingerprints():
     """Simple endpoint to compare two fingerprint images and say if they are of the same person or not."""
     file1 = request.files.get('fingerprint1')
     file2 = request.files.get('fingerprint2')
+    architecture = request.form.get('architecture', 'siamese')
     if not file1 or not file2:
         flash('Please upload both fingerprint images.')
         return redirect(url_for('home'))
     data1 = file1.read()
     data2 = file2.read()
-    # Use the matcher to compare two fingerprints directly (implement this method if not present)
+    matcher = FingerprintMatcher(
+        database_path=DATABASE_PATH,
+        model_path=MODEL_PATH,
+        model=architecture,
+        device="cuda" if torch.cuda.is_available() else "cpu"
+    )
     try:
         same_person, score = matcher.compare_fingerprints(data1, data2)
         if same_person:

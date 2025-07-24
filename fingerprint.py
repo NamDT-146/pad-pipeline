@@ -23,7 +23,7 @@ class FingerprintMatcher:
         os.makedirs(os.path.dirname(os.path.abspath(database_path)), exist_ok=True)
         
         print(f"Loading model from {model_path}")
-        self.model = get_architecture(model).to(device)
+        self.model = get_architecture(model, device=device)
         checkpoint = torch.load(model_path, map_location=device)
         
         if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:

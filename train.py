@@ -132,7 +132,9 @@ if __name__ == "__main__":
     )
     
     # Initialize the model
-    model = create_siamese_model(device)
+    # Choose architecture: 'siamese' or 'mobilenetv2'
+    architecture = 'siamese'  # or 'mobilenetv2'
+    model = get_architecture(architecture, device=device)
     
     # Loss function and optimizer
     criterion = nn.BCELoss()
