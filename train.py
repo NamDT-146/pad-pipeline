@@ -11,6 +11,7 @@ import torch.optim as optim
 # Import from refactored modules
 from dataset.siamesepair import create_siamese_dataloaders
 from model.siamesenetwork import create_siamese_model
+from model import get_architecture
 from model.metrics import accuracy, precision, recall, f1_score
 
 # Constants
@@ -128,12 +129,14 @@ if __name__ == "__main__":
     train_loader, val_loader, test_loader = create_siamese_dataloaders(
         dataset,
         batch_size=BATCH_SIZE,
-        num_workers=4
+        num_workers=0,
+        args=None,
+        genuine_rate=0.125
     )
     
     # Initialize the model
     # Choose architecture: 'siamese' or 'mobilenetv2'
-    architecture = 'siamese'  # or 'mobilenetv2'
+    architecture = 'mobilenetv2'
     model = get_architecture(architecture, device=device)
     
     # Loss function and optimizer

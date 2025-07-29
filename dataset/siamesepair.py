@@ -67,9 +67,9 @@ def get_siamese_datasets(dataset: str, genuine_rate=0.5, args=None):
     return train_pair_dataset, val_pair_dataset, test_pair_dataset
 
 
-def create_siamese_dataloaders(dataset: str, batch_size=32, num_workers=4, args=None):
+def create_siamese_dataloaders(dataset: str, batch_size=32, num_workers=4, args=None, genuine_rate=0.5):
 
-    train_pair_dataset, val_pair_dataset, test_pair_dataset = get_siamese_datasets(dataset=dataset)
+    train_pair_dataset, val_pair_dataset, test_pair_dataset = get_siamese_datasets(dataset=dataset, genuine_rate=genuine_rate)
     
     train_loader = DataLoader(
         train_pair_dataset, 

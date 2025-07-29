@@ -51,19 +51,17 @@ def get_LivDet_fingerprint_datasets(data_path: str, args=None, altered_levels=['
     print(f"Identified {len(subjects)} unique subjects total")
 
 
-    # Split subjects into train, val, and test
-    train_subjects, test_subjects = train_test_split(
-        subjects, test_size=0.2, random_state=42)
+    # Split subjects into 50% train, 50% val, 0% test
     train_subjects, val_subjects = train_test_split(
-        train_subjects, test_size=0.2, random_state=42)
-    
+        subjects, test_size=0.5, random_state=42)
+    test_subjects = []
+
     train_subject_to_id, val_subjects_to_id, test_subject_to_id = {}, {}, {}
     for idx, subject in enumerate(train_subjects):
         train_subject_to_id[subject.get_id()] = idx
     for idx, subject in enumerate(val_subjects):
         val_subjects_to_id[subject.get_id()] = idx
-    for idx, subject in enumerate(test_subjects):
-        test_subject_to_id[subject.get_id()] = idx
+    # test_subjects is empty
 
     
     
