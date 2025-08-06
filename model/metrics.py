@@ -1,4 +1,7 @@
 import torch
+import numpy as np
+from sklearn.metrics import roc_curve, auc
+import matplotlib.pyplot as plt
 
 def accuracy(y_pred, y_true):
     """
@@ -268,9 +271,165 @@ def sgar(y_pred, y_true):
     
     return correct / total
 
+def calculate_eer(y_pred, y_true):
+    """
+    Calculate Equal Error Rate (EER).
+    The point where False Acceptance Rate (FAR) equals False Rejection Rate (FRR).
+    
+    Args:
+        y_pred: Predicted values (0-1)
+        y_true: Ground truth values (0=impostor, 1=genuine)
+        
+    Returns:
+        EER value and corresponding threshold
+    """
+    # Convert to numpy for sklearn compatibility
+    if torch.is_tensor(y_pred):
+        y_pred_np = y_pred.detach().cpu().numpy()
+    else:
+        y_pred_np = y_pred
+    
+    if torch.is_tensor(y_true):
+        y_true_np = y_true.detach().cpu().numpy()
+    else:
+        y_true_np = y_true
+    
+    # Calculate ROC curve
+    fpr, tpr, thresholds = roc_curve(y_true_np, y_pred_np)
+    
+    # Find the point where FPR = 1 - TPR (i.e., FAR = FRR)
+    fnr = 1 - tpr  # False Negative Rate = 1 - True Positive Rate
+    eer_idx = np.argmin(np.abs(fpr - fnr))
+    eer = fpr[eer_idx]
+    eer_threshold = thresholds[eer_idx]
+    
+    return eer, eer_threshold
+
+def calculate_roc_metrics(y_pred, y_true):
+    """
+    Calculate ROC curve and related metrics.
+    
+    Args:
+        y_pred: Predicted values (0-1)
+        y_true: Ground truth values (0=impostor, 1=genuine)
+        
+    Returns:
+        Dictionary containing ROC metrics
+    """
+    # Convert to numpy for sklearn compatibility
+    if torch.is_tensor(y_pred):
+        y_pred_np = y_pred.detach().cpu().numpy()
+    else:
+        y_pred_np = y_pred
+    
+    if torch.is_tensor(y_true):
+        y_true_np = y_true.detach().cpu().numpy()
+    else:
+        y_true_np = y_true
+    
+    # Calculate ROC curve
+    fpr, tpr, thresholds = roc_curve(y_true_np, y_pred_np)
+    roc_auc = auc(fpr, tpr)
+    
+    # Calculate EER
+    eer, eer_threshold = calculate_eer(y_pred_np, y_true_np)
+    
+    return {
+        'fpr': fpr,
+        'tpr': tpr,
+        'thresholds': thresholds,
+        'roc_auc': roc_auc,
+        'eer': eer,
+        'eer_threshold': eer_threshold
+    }
+
+def plot_roc_curve(y_pred, y_true, save_path=None, title="ROC Curve"):
+    """
+    Plot ROC curve with EER point marked.
+    
+    Args:
+        y_pred: Predicted values (0-1)
+        y_true: Ground truth values (0=impostor, 1=genuine)
+        save_path: Path to save the plot (optional)
+        title: Title for the plot
+    """
+    # Calculate ROC metrics
+    roc_metrics = calculate_roc_metrics(y_pred, y_true)
+    
+    # Create the plot
+    plt.figure(figsize=(10, 8))
+    plt.plot(roc_metrics['fpr'], roc_metrics['tpr'], 
+             color='darkorange', lw=2, 
+             label=f'ROC curve (AUC = {roc_metrics["roc_auc"]:.3f})')
+    
+    # Plot EER point
+    plt.plot(roc_metrics['eer'], 1-roc_metrics['eer'], 'ro', 
+             markersize=10, label=f'EER = {roc_metrics["eer"]:.3f}')
+    
+    # Plot diagonal line
+    plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+    
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate (FPR)')
+    plt.ylabel('True Positive Rate (TPR)')
+    plt.title(title)
+    plt.legend(loc="lower right")
+    plt.grid(True, alpha=0.3)
+    
+    if save_path:
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"ROC curve saved to {save_path}")
+    
+    plt.show()
+
+def calculate_fmr_fnmr_at_threshold(y_pred, y_true, threshold):
+    """
+    Calculate FMR and FNMR at a specific threshold.
+    
+    Args:
+        y_pred: Predicted values (0-1)
+        y_true: Ground truth values (0=impostor, 1=genuine)
+        threshold: Decision threshold
+        
+    Returns:
+        FMR and FNMR values at the given threshold
+    """
+    if torch.is_tensor(y_pred):
+        y_pred_np = y_pred.detach().cpu().numpy()
+    else:
+        y_pred_np = y_pred
+    
+    if torch.is_tensor(y_true):
+        y_true_np = y_true.detach().cpu().numpy()
+    else:
+        y_true_np = y_true
+    
+    # Apply threshold
+    y_pred_binary = (y_pred_np >= threshold).astype(int)
+    
+    # Calculate FMR (False Match Rate)
+    fmr_val = fmr(torch.tensor(y_pred_binary), torch.tensor(y_true_np))
+    
+    # Calculate FNMR (False Non-Match Rate)
+    fnmr_val = fnmr(torch.tensor(y_pred_binary), torch.tensor(y_true_np))
+    
+    return fmr_val.item(), fnmr_val.item()
 
 def get_all_metrics(y_pred, y_true):
-
+    """
+    Calculate all available metrics for the given predictions and ground truth.
+    
+    Args:
+        y_pred: Predicted values (0-1)
+        y_true: Ground truth values (0=impostor, 1=genuine)
+        
+    Returns:
+        Dictionary containing all metrics
+    """
+    # Calculate ROC metrics
+    roc_metrics = calculate_roc_metrics(y_pred, y_true)
+    
     return {
         # Basic metrics
         'accuracy': accuracy(y_pred, y_true).item(),
@@ -290,5 +449,10 @@ def get_all_metrics(y_pred, y_true):
         'bpcer': bpcer(y_pred, y_true).item(),
         'iapmr': iapmr(y_pred, y_true).item(),
         'img_accuracy': img_accuracy(y_pred, y_true).item(),
-        'sgar': sgar(y_pred, y_true).item()
+        'sgar': sgar(y_pred, y_true).item(),
+        
+        # ROC and EER metrics
+        'roc_auc': roc_metrics['roc_auc'],
+        'eer': roc_metrics['eer'],
+        'eer_threshold': roc_metrics['eer_threshold']
     }
