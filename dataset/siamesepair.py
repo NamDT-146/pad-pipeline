@@ -8,8 +8,12 @@ from sklearn.model_selection import train_test_split
 from torch.utils.data import Dataset, DataLoader
 import torch
 
+from dataset.dataset_define import fvc
+
+from dataset.dataset_define.fvc import get_FVC_fingerprint_datasets
+
 from .preprocess import create_fingerprint_transforms, get_default_args, create_fingerprint_enhancement
-from .dataset_define import SubjectsFingerprint, get_SOKOTO_fingerprint_datasets, get_LivDet_fingerprint_datasets
+from .dataset_define import SubjectsFingerprint, get_SOKOTO_fingerprint_datasets, get_LivDet_fingerprint_datasets, get_FVC_fingerprint_datasets
 
 DATASET = {
     'SOKOTO': {
@@ -20,6 +24,12 @@ DATASET = {
     'LIVDET': {
         'get_datasets_func': get_LivDet_fingerprint_datasets,
         'data_path': 'data/livedet/Live',
+    },
+    'FVC': {
+        'get_datasets_func': get_FVC_fingerprint_datasets,
+        # 'dbase': ['DB1', 'DB2', 'DB3', 'DB4'],
+        'dbase': ['DB1'],
+        'data_path': 'data/fvc',
     }
 }
 
