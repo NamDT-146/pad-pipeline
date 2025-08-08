@@ -7,14 +7,12 @@ NETWORK = {
     'siamese': SiameseNetwork,
     'mobilenetv2': MobileNetV2Network,
     'minutiaenet': MinutiaeNetSiamese,
-    'minutiaenet_simple': SimpleMinutiaeNetSiamese,
 }
 
 FACTORY = {
     'siamese': create_siamese_model,
     'mobilenetv2': create_mobilenetv2_model,
     'minutiaenet': create_minutiaenet_model,
-    'minutiaenet_simple': create_simple_minutiaenet_model,
 }
 
 def get_architecture(network_type='siamese', args=None, device=None, **kwargs):

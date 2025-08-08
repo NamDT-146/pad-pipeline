@@ -55,6 +55,12 @@ class MobileNetV2Network(nn.Module):
 
     def extract_features(self, x):
         return self.forward_one(x)
+    
+    def compute_similarity(self, ft_vec1, ft_vec2):
+        diff = ft_vec1 - ft_vec2
+        diff = diff * diff
+        score = self.similarity_net(diff)
+        return score
 
 def create_mobilenetv2_model(device, pretrained=True):
     model = MobileNetV2Network(pretrained=pretrained).to(device)

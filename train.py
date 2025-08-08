@@ -196,11 +196,31 @@ if __name__ == "__main__":
     # Parse arguments
     args = parse_args()
     
-    # Set device
+    # Set device with fallback: CUDA -> MPS -> CPU
     if args.device is None:
-        args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        if torch.cuda.is_available():
+            args.device = torch.device('cuda')
+        elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
+            args.device = torch.device('mps')
+        else:
+            args.device = torch.device('cpu')
     else:
-        args.device = torch.device(args.device)
+        requested = str(args.device).lower()
+        if requested == 'cuda' and not torch.cuda.is_available():
+            if hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
+                print('CUDA not available. Falling back to MPS.')
+                args.device = torch.device('mps')
+            else:
+                print('CUDA not available. Falling back to CPU.')
+                args.device = torch.device('cpu')
+        elif requested == 'mps':
+            if hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
+                args.device = torch.device('mps')
+            else:
+                print('MPS not available. Falling back to CPU.')
+                args.device = torch.device('cpu')
+        else:
+            args.device = torch.device(requested)
     print(f"Using device: {args.device}")
     
     # Set random seeds for reproducibility
@@ -328,27 +348,21 @@ if __name__ == "__main__":
     # Calculate all metrics using get_all_metrics
     metrics = get_all_metrics(all_preds, all_labels)
 
-    # Log test results
-    test_results = f"Test results:\n"
-    test_results += f"Loss: {test_loss:.4f}\n"
+    # Log test results (only: Accuracy, ERR, FAR, FRR)
+    test_results = f"Test results (Accuracy, ERR, FAR, FRR):\n"
     test_results += f"Accuracy: {metrics['accuracy']:.4f}\n"
-    test_results += f"F1 Score: {metrics['f1']:.4f}\n"
+    test_results += f"ERR: {metrics['eer']:.4f}\n"
     test_results += f"FAR: {metrics['far']:.4f}\n"
     test_results += f"FRR: {metrics['frr']:.4f}\n"
-    test_results += f"EER: {metrics['eer']:.4f} (threshold: {metrics['eer_threshold']:.4f})\n"
-    test_results += f"ROC AUC: {metrics['roc_auc']:.4f}\n"
     print(test_results)
 
     # Save test results to file
     test_results_path = os.path.join(output_dir, 'test_results.txt')
     with open(test_results_path, 'w') as f:
-        f.write(f"Test Loss: {test_loss:.4f}\n")
         f.write(f"Accuracy: {metrics['accuracy']:.4f}\n")
-        f.write(f"F1 Score: {metrics['f1']:.4f}\n")
+        f.write(f"ERR: {metrics['eer']:.4f}\n")
         f.write(f"FAR: {metrics['far']:.4f}\n")
         f.write(f"FRR: {metrics['frr']:.4f}\n")
-        f.write(f"EER: {metrics['eer']:.4f} (threshold: {metrics['eer_threshold']:.4f})\n")
-        f.write(f"ROC AUC: {metrics['roc_auc']:.4f}\n")
     print(f"Test results saved to: {test_results_path}")
 
     # Generate and save ROC curve
@@ -358,13 +372,10 @@ if __name__ == "__main__":
 
     # Log final results to TensorBoard
     writer = SummaryWriter(log_dir=os.path.join(output_dir, 'tensorboard'))
-    writer.add_scalar('Test/loss', test_loss)
     writer.add_scalar('Test/accuracy', metrics['accuracy'])
-    writer.add_scalar('Test/f1', metrics['f1'])
+    writer.add_scalar('Test/err', metrics['eer'])
     writer.add_scalar('Test/far', metrics['far'])
     writer.add_scalar('Test/frr', metrics['frr'])
-    writer.add_scalar('Test/eer', metrics['eer'])
-    writer.add_scalar('Test/roc_auc', metrics['roc_auc'])
     writer.close()
 
     # Log final results to file
