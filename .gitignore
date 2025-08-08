@@ -17,6 +17,7 @@ tools/
 log.txt
 main.py
 best_model.pth
+nam_test.py
 
 # Ignore everything in a folder
 output/
