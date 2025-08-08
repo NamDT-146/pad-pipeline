@@ -10,73 +10,54 @@ class SiameseNetwork(nn.Module):
     def __init__(self, input_channels=1, base_filters=32, embedding_size=512):
         super(SiameseNetwork, self).__init__()
         
-        # Feature extraction network
+        # activation = nn.LeakyReLU(0.15)
+        self.activation = nn.SiLU()
+
         self.feature_net = nn.Sequential(
             # Block 1
             nn.Conv2d(input_channels, base_filters, kernel_size=3, padding=1),
             nn.BatchNorm2d(base_filters),
-            nn.LeakyReLU(0.15),
+            self.activation,
             nn.Dropout(0.4),
             nn.MaxPool2d(2),
             
             # Block 2
             nn.Conv2d(base_filters, base_filters*2, kernel_size=3, padding=1),
             nn.BatchNorm2d(base_filters*2),
-            nn.LeakyReLU(0.15),
+            self.activation,
             nn.Dropout(0.4),
             nn.MaxPool2d(2),
             
             # Block 3
-            nn.Conv2d(base_filters*2, base_filters * 4, kernel_size=3, padding=1),
+            nn.Conv2d(base_filters*2, base_filters*4, kernel_size=3, padding=1),
             nn.BatchNorm2d(base_filters*4),
-            nn.LeakyReLU(0.15),
+            self.activation,
             nn.Dropout(0.4),
             nn.MaxPool2d(2),
-
             
             # Block 4
-            nn.Conv2d(base_filters*4, base_filters* 8, kernel_size=3, padding=1),
+            nn.Conv2d(base_filters*4, base_filters*8, kernel_size=3, padding=1),
             nn.BatchNorm2d(base_filters*8),
-            nn.LeakyReLU(0.15),
+            self.activation,
             nn.Dropout(0.4),
             nn.MaxPool2d(2),
 
             # Block 5
-            nn.Conv2d(base_filters * 8, embedding_size, kernel_size=3, padding=1),
+            nn.Conv2d(base_filters*8, embedding_size, kernel_size=3, padding=1),
             nn.BatchNorm2d(embedding_size),
-            nn.LeakyReLU(0.15),
+            self.activation,
             nn.Dropout(0.4),
             nn.AdaptiveAvgPool2d((1, 1)),  # Add this instead
-
-            # # Block 6
-            # nn.Conv2d(embedding_size, embedding_size, kernel_size=3, padding=1),
-            # nn.BatchNorm2d(embedding_size),
-            # nn.SiLU(),
-            # nn.Dropout(0.4),
-            # nn.MaxPool2d(2),
-
-            # # Block 7
-            # nn.Conv2d(embedding_size, embedding_size, kernel_size=3, padding=1),
-            # nn.BatchNorm2d(embedding_size),
-            # nn.SiLU(),
-            # nn.Dropout(0.4),
-            # nn.AdaptiveAvgPool2d((1, 1)),  # Add this instead
         )
 
-        # Similarity network
-        self.similarity_net = nn.Sequential(
-            nn.Linear(embedding_size, 16),
-            nn.LeakyReLU(0.15),
-            nn.Linear(16, 1),
-            nn.Sigmoid()
-        )
+        self.fc_feature = nn.Linear(embedding_size, 16)        
+        self.fc_final = nn.Linear(16, 1)
+        self.sigmoid = nn.Sigmoid()
 
     def unit_normalize(self, x):
-        """Normalize feature vectors to unit length"""
         return F.normalize(x, p=2, dim=1)
     
     def forward_one(self, x):
-        """Process a single input through the feature extraction network"""
         # Reshape to [B, C, H, W]
         if x.dim() == 3:
             x = x.unsqueeze(1)
@@ -90,52 +71,32 @@ class SiameseNetwork(nn.Module):
         return x
         
     def forward(self, x1, x2):
-        """
-        Process a pair of inputs and compute similarity score.
-        
-        Args:
-            x1: First fingerprint image
-            x2: Second fingerprint image
-            
-        Returns:
-            Similarity score between 0 and 1 (1 = same finger, 0 = different)
-        """
-        # Get embeddings for both images
         out1 = self.forward_one(x1)
         out2 = self.forward_one(x2)
-        
-        # Compute squared difference
         diff = out1 - out2
-        diff = diff * diff  # Element-wise square
-        
-        # Compute similarity score
-        score = self.similarity_net(diff)
+        x = self.fc_feature(diff)
+        x = x * x  # Element-wise square
+        x = self.fc_final(x)
+        score = self.sigmoid(x)
         return score
-
+    
     def get_feature_extractor(self):
-        """
-        Returns the feature extraction part of the network.
-        Useful for transfer learning or feature extraction.
-        """
         return self.feature_net
     
     def extract_features(self, x):
-        """
-        Extract fingerprint features for a batch of images.
-        Useful for embedding generation or retrieval.
-        """
         return self.forward_one(x)
+
+    def compute_similarity(self, ft_vec1, ft_vec2):
+        diff = ft_vec1 - ft_vec2
+        x = self.fc_feature(diff)
+        x = x * x
+        x = self.fc_final(x)
+        score = self.sigmoid(x)
+        return score
+
+
 
 # Add a file with metrics utility functions
 def create_siamese_model(device):
-    """
-    Factory function to create and initialize a SiameseNetwork.
-    
-    Args:
-        device: torch.device for model placement
-        
-    Returns:
-        Initialized SiameseNetwork on the specified device
-    """
     model = SiameseNetwork().to(device)
     return model
