@@ -94,9 +94,6 @@ class SiameseNetwork(nn.Module):
         score = self.sigmoid(x)
         return score
 
-
-
-# Add a file with metrics utility functions
 def create_siamese_model(device):
     model = SiameseNetwork().to(device)
     return model
