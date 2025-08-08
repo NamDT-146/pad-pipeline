@@ -115,10 +115,6 @@ class FingerprintMatcher:
     
     # ===================== SIMPLE FINGERPRINT COMPARISON =====================
     def compare_fingerprints(self, fingerprint_data1, fingerprint_data2, threshold=0.75):
-        """
-        Compare two fingerprint images and return (same_person: bool, score: float).
-        Returns True if the similarity score >= threshold, else False.
-        """
         try:
             # Convert to PIL Image if binary data
             if isinstance(fingerprint_data1, bytes):
@@ -136,10 +132,8 @@ class FingerprintMatcher:
             pre2 = self._preprocess_image(image2)
             enh2 = self._enhance_image(pre2)
             feat2 = self._extract_features(enh2)
-            # Compute similarity (same as in _match_features)
-            diff = feat1 - feat2
-            diff_squared = diff * diff
-            sim_score = 1.0 - torch.sqrt(torch.sum(diff_squared)).item() / 2.0
+            sim_score = self.model.compute_similarity(feat1, feat2)
+            sim_score = sim_score.item()  # Convert to Python float
             return sim_score >= threshold, sim_score
         except Exception as e:
             print(f"Error comparing fingerprints: {e}")
@@ -191,10 +185,8 @@ class FingerprintMatcher:
         best_score = 0.0
         
         for subject_id, reference_features in self.database.items():
-            diff = reference_features - feature_vector
-            diff_squared = diff * diff
-            sim_score = 1.0 - torch.sqrt(torch.sum(diff_squared)).item() / 2.0
-            
+            sim_score = self.model.compute_similarity(feature_vector, reference_features)
+            sim_score = sim_score.item()  # Convert to Python float
             if sim_score > best_score:
                 best_score = sim_score
                 best_match = subject_id
