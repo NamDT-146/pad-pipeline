@@ -61,3 +61,4 @@ Flask
 importlib_metadata
 itsdangerous
 Werkzeug
+tensorboard

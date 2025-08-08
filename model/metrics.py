@@ -433,23 +433,23 @@ def get_all_metrics(y_pred, y_true):
     return {
         # Basic metrics
         'accuracy': accuracy(y_pred, y_true).item(),
-        'precision': precision(y_pred, y_true).item(),
-        'recall': recall(y_pred, y_true).item(),
+        # 'precision': precision(y_pred, y_true).item(),
+        # 'recall': recall(y_pred, y_true).item(),
         'f1': f1_score(y_pred, y_true).item(),
         
         # Verification metrics
         'far': far(y_pred, y_true).item(),
         'frr': frr(y_pred, y_true).item(),
-        'fmr': fmr(y_pred, y_true).item(),
-        'fnmr': fnmr(y_pred, y_true).item(),
-        'gar': gar(y_pred, y_true).item(),
+        # 'fmr': fmr(y_pred, y_true).item(),
+        # 'fnmr': fnmr(y_pred, y_true).item(),
+        # 'gar': gar(y_pred, y_true).item(),
         
         # Presentation attack detection metrics
-        'apcer': apcer(y_pred, y_true).item(),
-        'bpcer': bpcer(y_pred, y_true).item(),
-        'iapmr': iapmr(y_pred, y_true).item(),
-        'img_accuracy': img_accuracy(y_pred, y_true).item(),
-        'sgar': sgar(y_pred, y_true).item(),
+        # 'apcer': apcer(y_pred, y_true).item(),
+        # 'bpcer': bpcer(y_pred, y_true).item(),
+        # 'iapmr': iapmr(y_pred, y_true).item(),
+        # 'img_accuracy': img_accuracy(y_pred, y_true).item(),
+        # 'sgar': sgar(y_pred, y_true).item(),
         
         # ROC and EER metrics
         'roc_auc': roc_metrics['roc_auc'],
