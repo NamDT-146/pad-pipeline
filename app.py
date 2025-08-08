@@ -2,6 +2,7 @@ import os
 from flask import Flask, request, render_template, redirect, url_for, flash, jsonify
 from fingerprint import FingerprintMatcher
 import torch
+from model import FACTORY
 
 app = Flask(__name__)
 app.secret_key = 'demo_secret'  # for flash messages
@@ -13,16 +14,25 @@ DATABASE_PATH = "database/fingerprint_database.pt"
 # Create required directories
 os.makedirs(os.path.dirname(DATABASE_PATH), exist_ok=True)
 
+# Device preference helper: CUDA -> MPS -> CPU
+def get_preferred_device():
+    if torch.cuda.is_available():
+        return "cuda"
+    if hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
+        return "mps"
+    return "cpu"
+
 # Initialize fingerprint matcher
 matcher = FingerprintMatcher(
     database_path=DATABASE_PATH,
     model_path=MODEL_PATH,
-    device="cuda" if torch.cuda.is_available() else "cpu"
+    device=get_preferred_device()
 )
 
 @app.route('/', methods=['GET'])
 def home():
-    return render_template('index.html')
+    architectures = list(FACTORY.keys())
+    return render_template('index.html', architectures=architectures)
 
 @app.route('/process', methods=['POST'])
 def process():
@@ -42,7 +52,7 @@ def process():
         database_path=DATABASE_PATH,
         model_path=MODEL_PATH,
         model=architecture,
-        device="cuda" if torch.cuda.is_available() else "cpu"
+        device=get_preferred_device()
     )
 
     if mode == 'register':
@@ -97,7 +107,7 @@ def compare_fingerprints():
         database_path=DATABASE_PATH,
         model_path=MODEL_PATH,
         model=architecture,
-        device="cuda" if torch.cuda.is_available() else "cpu"
+        device=get_preferred_device()
     )
     try:
         same_person, score = matcher.compare_fingerprints(data1, data2)
