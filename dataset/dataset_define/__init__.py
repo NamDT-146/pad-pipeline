@@ -1,3 +1,4 @@
 from .sokoto import get_SOKOTO_fingerprint_datasets
 from .livdet import get_LivDet_fingerprint_datasets
 from .basedataset import SubjectsFingerprint, BaseDataset
+from .fvc import get_FVC_fingerprint_datasets

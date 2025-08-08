@@ -74,7 +74,7 @@ def get_LivDet_fingerprint_datasets(data_path: str, args=None, altered_levels=['
 
 if __name__ == "__main__":
     data_path = 'data/livedet/Live'  # Adjust to your dataset path
-    train_dataset, val_dataset, test_dataset = get_livdet_fingerprint_datasets(data_path)
+    train_dataset, val_dataset, test_dataset = get_LivDet_fingerprint_datasets(data_path)
     
     print(f"Train dataset: {len(train_dataset)} subjects")
     print(f"Validation dataset: {len(val_dataset)} subjects")
