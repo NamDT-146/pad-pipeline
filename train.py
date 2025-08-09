@@ -141,25 +141,40 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, args, out
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             model_path = os.path.join(output_dir, 'best_model.pth')
+            try:
+                torch.save({
+                    'epoch': epoch,
+                    'model_state_dict': model.state_dict(),
+                    'optimizer_state_dict': optimizer.state_dict(),
+                    'loss': best_val_loss,
+                }, model_path)
+                print(f"Saved new best model with validation loss: {best_val_loss:.4f}")
+                print(f"Model saved to: {model_path}")
+            except Exception as e:
+                print(f"Failed to save best model to {model_path}: {e}")
+        
+        # Save regular checkpoint (keep only the latest one to reduce disk usage)
+        checkpoint_path = os.path.join(output_dir, f'checkpoint_epoch_{epoch}.pth')
+        try:
             torch.save({
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
-                'loss': best_val_loss,
-            }, model_path)
-            print(f"Saved new best model with validation loss: {best_val_loss:.4f}")
-            print(f"Model saved to: {model_path}")
-        
-        # Save regular checkpoint
-        checkpoint_path = os.path.join(output_dir, f'checkpoint_epoch_{epoch}.pth')
-        torch.save({
-            'epoch': epoch,
-            'model_state_dict': model.state_dict(),
-            'optimizer_state_dict': optimizer.state_dict(),
-            'loss': val_loss,
-            'best_loss': best_val_loss,
-            'history': history,
-        }, checkpoint_path)
+                'loss': val_loss,
+                'best_loss': best_val_loss,
+                'history': history,
+            }, checkpoint_path)
+
+            # Remove previous checkpoint to avoid accumulating many large files
+            if epoch > start_epoch:
+                prev_checkpoint_path = os.path.join(output_dir, f'checkpoint_epoch_{epoch-1}.pth')
+                if os.path.exists(prev_checkpoint_path):
+                    try:
+                        os.remove(prev_checkpoint_path)
+                    except Exception as remove_err:
+                        print(f"Warning: could not remove previous checkpoint {prev_checkpoint_path}: {remove_err}")
+        except Exception as e:
+            print(f"Failed to save checkpoint to {checkpoint_path}: {e}")
         
         # Update history
         history['train_loss'].append(train_loss)
@@ -370,13 +385,13 @@ if __name__ == "__main__":
     plot_roc_curve(all_preds, all_labels, save_path=roc_path, 
                 title=f"ROC Curve for {args.architecture} on {args.dataset}")
 
-    # Log final results to TensorBoard
-    writer = SummaryWriter(log_dir=os.path.join(output_dir, 'tensorboard'))
-    writer.add_scalar('Test/accuracy', metrics['accuracy'])
-    writer.add_scalar('Test/err', metrics['eer'])
-    writer.add_scalar('Test/far', metrics['far'])
-    writer.add_scalar('Test/frr', metrics['frr'])
-    writer.close()
+    # Log final results to TensorBoard (use a new short-lived writer to avoid scope issues)
+    final_writer = SummaryWriter(log_dir=os.path.join(output_dir, 'tensorboard'))
+    final_writer.add_scalar('Test/accuracy', metrics['accuracy'])
+    final_writer.add_scalar('Test/err', metrics['eer'])
+    final_writer.add_scalar('Test/far', metrics['far'])
+    final_writer.add_scalar('Test/frr', metrics['frr'])
+    final_writer.close()
 
     # Log final results to file
     log_file = os.path.join(output_dir, 'log.txt')
