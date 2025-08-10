@@ -12,7 +12,7 @@ import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 
 # Import from refactored modules
-from dataset.siamesepair import create_siamese_dataloaders
+from dataset.siamesepair import create_siamese_dataloaders, create_siamese_exhaustive_dataloaders
 from model.siamesenetwork import create_siamese_model
 from model import get_architecture
 from model.metrics import accuracy, precision, recall, f1_score, get_all_metrics, plot_roc_curve
@@ -31,9 +31,13 @@ def parse_args():
                         help='Batch size for training')
     parser.add_argument('--epochs', type=int, default=150, 
                         help='Number of epochs to train')
+    parser.add_argument('--exhaustive', action='store_true', 
+                        help='Use exhaustive data loading')
     parser.add_argument('--num_epoch_per_val', type=int, default=1, 
                         help='Number of times to loop through validation dataset per validation')
-    
+    parser.add_argument('--lr', type=int, default=0.001,
+                        help='Learningr ate')
+
     # Environment parameters
     parser.add_argument('--output_dir', type=str, default='output', 
                         help='Base output directory')
@@ -217,12 +221,20 @@ if __name__ == "__main__":
     print(f"Saving outputs to: {output_dir}")
     
     # Create data loaders
-    train_loader, val_loader, test_loader = create_siamese_dataloaders(
-        args.dataset,
-        batch_size=args.batch_size,
-        num_workers=0,
-        args=None,
-        genuine_rate=0.125
+    if args.exhaustive:
+        train_loader, val_loader, test_loader = create_siamese_exhaustive_dataloaders(
+            args.dataset,
+            batch_size=args.batch_size,
+            num_workers=2,
+            args=None,
+        )
+    else:
+        train_loader, val_loader, test_loader = create_siamese_dataloaders(
+            args.dataset,
+            batch_size=args.batch_size,
+            num_workers=2,
+            args=None,
+            genuine_rate=0.5
     )
     
     # Initialize the model
@@ -230,7 +242,7 @@ if __name__ == "__main__":
     
     # Loss function and optimizer
     criterion = nn.BCELoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    optimizer = optim.Adam(model.parameters(), lr=args.lr)
     
     start_epoch = 0
     
