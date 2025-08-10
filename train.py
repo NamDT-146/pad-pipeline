@@ -35,7 +35,7 @@ def parse_args():
                         help='Use exhaustive data loading')
     parser.add_argument('--num_epoch_per_val', type=int, default=1, 
                         help='Number of times to loop through validation dataset per validation')
-    parser.add_argument('--lr', type=int, default=0.0001,
+    parser.add_argument('--lr', type=float, default=0.0001,
                         help='Learning rate')
 
     # Environment parameters
