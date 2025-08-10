@@ -2,6 +2,7 @@ import os
 from flask import Flask, request, render_template, redirect, url_for, flash, jsonify
 from fingerprint import FingerprintMatcher
 import torch
+from model import FACTORY
 
 app = Flask(__name__)
 app.secret_key = 'demo_secret'  # for flash messages
@@ -10,19 +11,43 @@ app.secret_key = 'demo_secret'  # for flash messages
 MODEL_PATH = "weights/bad_model.pth"
 DATABASE_PATH = "database/fingerprint_database.pt"
 
+# Optional: map architecture keys to their associated weights
+ARCH_WEIGHTS = {
+    "siamese": "weights/siamese.pth",
+    "mobilenetv2": "weights/mobilenetv2.pth",
+    "minutiaenet": "weights/minutiaenet.pth",
+}
+
 # Create required directories
 os.makedirs(os.path.dirname(DATABASE_PATH), exist_ok=True)
 
-# Initialize fingerprint matcher
+# Device preference helper: CUDA -> MPS -> CPU
+def get_preferred_device():
+    if torch.cuda.is_available():
+        return "cuda"
+    if hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
+        return "mps"
+    return "cpu"
+
+def get_model_path_for_arch(architecture: str) -> str:
+    """Return the weights path for a given architecture, falling back to MODEL_PATH if missing."""
+    path = ARCH_WEIGHTS.get(architecture, MODEL_PATH)
+    if not os.path.isfile(path):
+        print(f"Warning: weights for '{architecture}' not found at {path}. Falling back to {MODEL_PATH}.")
+        return MODEL_PATH
+    return path
+
+# Initialize fingerprint matcher (default to siamese weights if present)
 matcher = FingerprintMatcher(
     database_path=DATABASE_PATH,
-    model_path=MODEL_PATH,
-    device="cuda" if torch.cuda.is_available() else "cpu"
+    model_path=get_model_path_for_arch("siamese"),
+    device=get_preferred_device()
 )
 
 @app.route('/', methods=['GET'])
 def home():
-    return render_template('index.html')
+    architectures = list(FACTORY.keys())
+    return render_template('index.html', architectures=architectures)
 
 @app.route('/process', methods=['POST'])
 def process():
@@ -40,9 +65,9 @@ def process():
     # Use selected architecture for this request
     matcher = FingerprintMatcher(
         database_path=DATABASE_PATH,
-        model_path=MODEL_PATH,
+        model_path=get_model_path_for_arch(architecture),
         model=architecture,
-        device="cuda" if torch.cuda.is_available() else "cpu"
+        device=get_preferred_device()
     )
 
     if mode == 'register':
@@ -95,9 +120,9 @@ def compare_fingerprints():
     data2 = file2.read()
     matcher = FingerprintMatcher(
         database_path=DATABASE_PATH,
-        model_path=MODEL_PATH,
+        model_path=get_model_path_for_arch(architecture),
         model=architecture,
-        device="cuda" if torch.cuda.is_available() else "cpu"
+        device=get_preferred_device()
     )
     try:
         same_person, score = matcher.compare_fingerprints(data1, data2)

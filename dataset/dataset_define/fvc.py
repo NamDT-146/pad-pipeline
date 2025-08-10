@@ -41,7 +41,14 @@ def get_FVC_fingerprint_datasets(data_path: str, args=None, dbase=['DB1']):
     train_subjects: list[SubjectsFingerprint] = []
     test_subjects: list[SubjectsFingerprint] = []
 
-    for subjects, images in [(train_subjects, train_images), (test_subjects, test_images)]:
+    # If no images found at all, raise a clear error
+    if len(all_db_train_images) == 0 and len(all_db_test_images) == 0:
+        raise FileNotFoundError(
+            f"No FVC images found under {data_path}. Expected folders like '{dbase[0]}_A' and '{dbase[0]}_B' containing .tif files."
+        )
+
+    # Build subject lists from discovered images
+    for subjects, images in [(train_subjects, all_db_train_images), (test_subjects, all_db_test_images)]:
         for path in images:
             parts = path.stem.split('_')
             subject_id = ""
@@ -62,8 +69,12 @@ def get_FVC_fingerprint_datasets(data_path: str, args=None, dbase=['DB1']):
     print(f"Found {len(train_subjects)} training fingerprint instances across all databases")
     print(f"Found {len(test_subjects)} testing fingerprint instances across all databases")
 
-    train_subjects, val_subjects = train_test_split(
-        train_subjects, test_size=0.2, random_state=42)
+    # Split train into train/val if we have any training subjects
+    if len(train_subjects) > 0:
+        train_subjects, val_subjects = train_test_split(
+            train_subjects, test_size=0.2, random_state=42)
+    else:
+        val_subjects = []
 
     train_subject_to_id, val_subjects_to_id, test_subject_to_id = {}, {}, {}
     for idx, subject in enumerate(train_subjects):

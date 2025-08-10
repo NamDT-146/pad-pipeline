@@ -23,3 +23,4 @@ nam_test.py
 output/
 
 venv/
+.venv/

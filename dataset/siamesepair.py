@@ -11,8 +11,6 @@ import math
 
 from dataset.dataset_define import fvc
 
-from dataset.dataset_define.fvc import get_FVC_fingerprint_datasets
-
 from .preprocess import create_fingerprint_transforms, get_default_args, create_fingerprint_enhancement
 from .dataset_define import SubjectsFingerprint, get_SOKOTO_fingerprint_datasets, get_LivDet_fingerprint_datasets, get_FVC_fingerprint_datasets
 

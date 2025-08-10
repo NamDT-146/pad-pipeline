@@ -1,20 +1,23 @@
 from .siamesenetwork import SiameseNetwork, create_siamese_model
 from .mobilenetv2 import MobileNetV2Network, create_mobilenetv2_model
 from .minutiaenet import MinutiaeNetSiamese, create_minutiaenet_model
-from .minutiaenet_simple import SimpleMinutiaeNetSiamese, create_simple_minutiaenet_model
+from .efficientnetb4 import EfficientNetB4Network, create_efficientnetb4_model
+from .ditehrnet import DiteHRNetNetwork, create_ditehrnet_model
 
 NETWORK = {
     'siamese': SiameseNetwork,
     'mobilenetv2': MobileNetV2Network,
     'minutiaenet': MinutiaeNetSiamese,
-    'minutiaenet_simple': SimpleMinutiaeNetSiamese,
+    'efficientnetb4': EfficientNetB4Network,
+    'ditehrnet': DiteHRNetNetwork,
 }
 
 FACTORY = {
     'siamese': create_siamese_model,
     'mobilenetv2': create_mobilenetv2_model,
     'minutiaenet': create_minutiaenet_model,
-    'minutiaenet_simple': create_simple_minutiaenet_model,
+    'efficientnetb4': create_efficientnetb4_model,
+    'ditehrnet': create_ditehrnet_model,
 }
 
 def get_architecture(network_type='siamese', args=None, device=None, **kwargs):

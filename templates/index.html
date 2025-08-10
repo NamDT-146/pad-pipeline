@@ -15,8 +15,9 @@
         <input type="file" name="fingerprint2" id="fingerprint2" accept=".bmp" required><br><br>
         <label for="architecture">Model Architecture:</label>
         <select name="architecture" id="architecture">
-            <option value="siamese">Siamese (Custom CNN)</option>
-            <option value="mobilenetv2">MobileNetV2</option>
+            {% for key in architectures %}
+            <option value="{{ key }}">{{ key }}</option>
+            {% endfor %}
         </select><br><br>
         <button type="submit">Compare</button>
     </form>
@@ -31,8 +32,9 @@
         <input type="number" step="0.01" name="threshold" id="threshold" value="0.75"><br><br>
         <label for="architecture">Model Architecture:</label>
         <select name="architecture" id="architecture">
-            <option value="siamese">Siamese (Custom CNN)</option>
-            <option value="mobilenetv2">MobileNetV2</option>
+            {% for key in architectures %}
+            <option value="{{ key }}">{{ key }}</option>
+            {% endfor %}
         </select><br><br>
         <input type="radio" id="register" name="mode" value="register" required>
         <label for="register">Register</label>
