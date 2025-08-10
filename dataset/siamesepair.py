@@ -86,8 +86,8 @@ class SiamesePairExhaustiveDataset(Dataset):
             label = 1.0
         else:
             # mapping genuie index to imposter index
-            imposter_idx = math.floor(idx / len(self.genuine_pairs) * len(self.imposter_pairs))
-            img_path_1, img_path_2 = self.imposter_pairs[imposter_idx]
+            # imposter_idx = (range(len(self.imposter_pairs)))
+            img_path_1, img_path_2 = random.choice(self.imposter_pairs)
             label = 0.0
 
         if random.random() < 0.5:

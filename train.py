@@ -35,8 +35,8 @@ def parse_args():
                         help='Use exhaustive data loading')
     parser.add_argument('--num_epoch_per_val', type=int, default=1, 
                         help='Number of times to loop through validation dataset per validation')
-    parser.add_argument('--lr', type=int, default=0.001,
-                        help='Learningr ate')
+    parser.add_argument('--lr', type=int, default=0.0001,
+                        help='Learning rate')
 
     # Environment parameters
     parser.add_argument('--output_dir', type=str, default='output', 
@@ -154,16 +154,16 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, args, out
             print(f"Saved new best model with validation loss: {best_val_loss:.4f}")
             print(f"Model saved to: {model_path}")
         
-        # Save regular checkpoint
-        checkpoint_path = os.path.join(output_dir, f'checkpoint_epoch_{epoch}.pth')
-        torch.save({
-            'epoch': epoch,
-            'model_state_dict': model.state_dict(),
-            'optimizer_state_dict': optimizer.state_dict(),
-            'loss': val_loss,
-            'best_loss': best_val_loss,
-            'history': history,
-        }, checkpoint_path)
+        # # Save regular checkpoint
+        # checkpoint_path = os.path.join(output_dir, f'checkpoint_epoch_{epoch}.pth')
+        # torch.save({
+        #     'epoch': epoch,
+        #     'model_state_dict': model.state_dict(),
+        #     'optimizer_state_dict': optimizer.state_dict(),
+        #     'loss': val_loss,
+        #     'best_loss': best_val_loss,
+        #     'history': history,
+        # }, checkpoint_path)
         
         # Update history
         history['train_loss'].append(train_loss)
