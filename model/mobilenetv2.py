@@ -13,7 +13,7 @@ class MobileNetV2Network(nn.Module):
         mobilenet = models.mobilenet_v2(pretrained=pretrained)
         # Adjust first conv layer for grayscale if needed
         if input_channels == 1:
-            weight = mobilenet.features[0][0].weight.data.sum(dim=1, keepdim=True)
+            weight = mobilenet.features[0][0].weight.data.mean(dim=1, keepdim=True)
             mobilenet.features[0][0] = nn.Conv2d(1, 32, kernel_size=3, stride=2, padding=1, bias=False)
             mobilenet.features[0][0].weight.data = weight
         self.feature_net = mobilenet.features

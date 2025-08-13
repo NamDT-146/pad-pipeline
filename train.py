@@ -248,7 +248,7 @@ if __name__ == "__main__":
         train_loader, val_loader, test_loader = create_siamese_exhaustive_dataloaders(
             args.dataset,
             batch_size=args.batch_size,
-            num_workers=2,
+            num_workers=0,
             args=None,
         )
     else:

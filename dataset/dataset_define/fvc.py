@@ -15,10 +15,10 @@ from sklearn.model_selection import train_test_split
 
 class FVCDataset(BaseDataset):
     def __init__(self, data_path: str, split: str = 'train', args: Optional[Any] = None, 
-                 dbase: list = ['DB1', 'DB2', 'DB3', 'DB4'], subjects: list = None, subject_to_id: dict = {}):
+                 dbase: list = ['DB0','DB1', 'DB2', 'DB3', 'DB4'], subjects: list = None, subject_to_id: dict = {}):
         super().__init__(data_path, args, split, subjects, subject_to_id)
 
-def get_FVC_fingerprint_datasets(data_path: str, args=None, dbase=['DB1']):
+def get_FVC_fingerprint_datasets(data_path: str, args=None, dbase=['DB0']):
 
     data_path = Path(data_path)
     all_db_train_images = []

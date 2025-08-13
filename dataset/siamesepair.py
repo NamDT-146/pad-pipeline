@@ -27,7 +27,7 @@ DATASET = {
     'FVC': {
         'get_datasets_func': get_FVC_fingerprint_datasets,
         # 'dbase': ['DB1', 'DB2', 'DB3', 'DB4'],
-        'dbase': ['DB1'],
+        'dbase': ['DB0'],
         'data_path': 'data/fvc',
     }
 }
